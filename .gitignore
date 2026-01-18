@@ -8,3 +8,21 @@ venv/
 .venv/
 *.egg-info/
 .DS_Store
+
+# Environment variables and API keys
+.env
+*.env.local
+
+# Gemini API cache
+cluster_title_cache.json
+
+# Data files (too large for git)
+candidate_clusters.json
+seen_ids.json
+
+# Generated files
+cluster_graph.html
+
+# Test files
+test_hybrid_search.py
+cleanup_duplicates.py

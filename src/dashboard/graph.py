@@ -84,10 +84,7 @@ def build_cluster_graph(clusters, threshold=0.55):
     net = Network(height="600px", bgcolor="#0e1117", font_color="white")
     net.from_nx(G)
     
-    # Disable physics after initial layout to prevent drift
-    net.toggle_physics(False)
-    
-    # Enable click interactions - show popup on click with persistent text
+    # Configure physics for initial layout only - will be disabled after stabilization
     net.set_options("""
     {
         "nodes": {
@@ -104,10 +101,28 @@ def build_cluster_graph(clusters, threshold=0.55):
         "interaction": {
             "hover": true,
             "hoverConnectedEdges": false,
-            "selectConnectedEdges": false
+            "selectConnectedEdges": false,
+            "dragNodes": true,
+            "dragView": true,
+            "zoomView": true
         },
         "physics": {
-            "enabled": false
+            "enabled": true,
+            "stabilization": {
+                "enabled": true,
+                "iterations": 200,
+                "updateInterval": 25,
+                "fit": true
+            },
+            "barnesHut": {
+                "gravitationalConstant": -8000,
+                "centralGravity": 0.3,
+                "springLength": 150,
+                "springConstant": 0.04,
+                "damping": 0.09,
+                "avoidOverlap": 0.5
+            },
+            "solver": "barnesHut"
         }
     }
     """)
@@ -116,10 +131,18 @@ def build_cluster_graph(clusters, threshold=0.55):
     custom_html = """
     <script type="text/javascript">
         var selectedNode = null;
+        var physicsDisabled = false;
+        
+        // Disable physics after stabilization so nodes stay where moved
+        network.once("stabilizationIterationsDone", function() {
+            network.setOptions({ physics: { enabled: false } });
+            physicsDisabled = true;
+        });
         
         // When dragging a cluster node, move all connected signal nodes with it
         var dragStartPositions = {};
         var clusterStartPosition = {};
+        var isDraggingCluster = false;
         
         network.on("dragStart", function(params) {
             if (params.nodes.length > 0) {
@@ -127,6 +150,7 @@ def build_cluster_graph(clusters, threshold=0.55):
                 
                 // Check if this is a cluster node
                 if (nodeId.startsWith('cluster_')) {
+                    isDraggingCluster = true;
                     // Store initial position of cluster
                     clusterStartPosition = network.getPositions([nodeId])[nodeId];
                     
@@ -139,6 +163,9 @@ def build_cluster_graph(clusters, threshold=0.55):
                             dragStartPositions[connectedId] = network.getPositions([connectedId])[connectedId];
                         }
                     });
+                } else {
+                    // Dragging a signal node - allow independent movement
+                    isDraggingCluster = false;
                 }
             }
         });
@@ -148,23 +175,20 @@ def build_cluster_graph(clusters, threshold=0.55):
                 var nodeId = params.nodes[0];
                 
                 // If dragging a cluster, move connected signals
-                if (nodeId.startsWith('cluster_') && Object.keys(dragStartPositions).length > 0) {
+                if (isDraggingCluster && nodeId.startsWith('cluster_') && Object.keys(dragStartPositions).length > 0) {
                     var currentPos = network.getPositions([nodeId])[nodeId];
                     var dx = currentPos.x - clusterStartPosition.x;
                     var dy = currentPos.y - clusterStartPosition.y;
                     
                     // Move all connected signal nodes by the same offset
-                    var updates = [];
                     for (var connectedId in dragStartPositions) {
                         var oldPos = dragStartPositions[connectedId];
-                        updates.push({
-                            id: connectedId,
-                            x: oldPos.x + dx,
-                            y: oldPos.y + dy
-                        });
+                        var newX = oldPos.x + dx;
+                        var newY = oldPos.y + dy;
+                        network.moveNode(connectedId, newX, newY);
                     }
-                    network.body.data.nodes.update(updates);
                 }
+                // If dragging a signal node, it moves independently (default behavior)
             }
         });
         
@@ -172,6 +196,7 @@ def build_cluster_graph(clusters, threshold=0.55):
             // Clear drag state
             dragStartPositions = {};
             clusterStartPosition = {};
+            isDraggingCluster = false;
         });
         
         network.on("click", function(params) {

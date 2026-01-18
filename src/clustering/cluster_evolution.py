@@ -46,11 +46,27 @@ def evolve_clusters(
             sim = cosine_similarity(new_centroid, candidate["centroid"])
 
             if sim >= similarity_threshold:
-                # merge
-                candidate["signals"].extend(new_cluster["signals"])
-                candidate["embeddings"].extend(new_embeddings)
-                candidate["centroid"] = compute_centroid(candidate["embeddings"])
-                candidate["signal_count"] = len(candidate["signals"])
+                # Merge - but avoid duplicate signals
+                existing_signal_ids = {s["signal_id"] for s in candidate["signals"]}
+                
+                # Only add new signals that aren't already in the cluster
+                new_signals_to_add = [
+                    s for s in new_cluster["signals"] 
+                    if s["signal_id"] not in existing_signal_ids
+                ]
+                
+                if new_signals_to_add:
+                    # Compute embeddings only for truly new signals
+                    new_signal_embeddings = [
+                        embedding_model.embed(s["text"]) 
+                        for s in new_signals_to_add
+                    ]
+                    
+                    candidate["signals"].extend(new_signals_to_add)
+                    candidate["embeddings"].extend(new_signal_embeddings)
+                    candidate["centroid"] = compute_centroid(candidate["embeddings"])
+                    candidate["signal_count"] = len(candidate["signals"])
+                
                 merged = True
                 break
 
