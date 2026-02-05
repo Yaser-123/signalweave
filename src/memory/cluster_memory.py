@@ -57,7 +57,11 @@ class ClusterMemory:
                 "cluster_id": cluster_id_str,  # Keep original UUID in payload
                 "signal_count": proto_cluster["signal_count"],
                 "created_at": proto_cluster["created_at"],
-                "member_signal_ids": [s["signal_id"] for s in proto_cluster["signals"]]
+                "last_updated": proto_cluster.get("last_updated", proto_cluster.get("created_at")),
+                "member_signal_ids": [s["signal_id"] for s in proto_cluster["signals"]],
+                "growth_ratio": proto_cluster.get("growth_ratio", 1.0),
+                "critic_report": proto_cluster.get("critic_report"),
+                "controller_decision": proto_cluster.get("controller_decision")
             }
         )
 
