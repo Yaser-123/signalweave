@@ -32,5 +32,5 @@ jobs:
         run: |
           python main.py
           echo "✅ RSS ingestion complete!"
-          echo "Note: New signals and clusters saved to Qdrant Cloud"
-          echo "Title generation happens only in Streamlit app for new clusters"
+          echo "✅ Clusters created/merged with auto-generated titles"
+          echo "✅ All data saved to Qdrant Cloud"
