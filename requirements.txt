@@ -3,8 +3,9 @@ sentence-transformers
 qdrant-client
 feedparser
 numpy
-streamlit
+streamlit==1.54.0
 networkx
 pyvis
 google-generativeai
 python-dotenv
+torch

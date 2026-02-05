@@ -51,11 +51,11 @@ def _ensure_cache_collection():
         return True
     except Exception:
         try:
-            # Create collection with minimal vector (just 1 dimension - we only need key-value storage)
+            # Create collection with 384-dim vectors to match embedding model
             client.create_collection(
                 collection_name=CACHE_COLLECTION,
                 vectors_config=VectorParams(
-                    size=1,
+                    size=384,
                     distance=Distance.COSINE
                 )
             )
